@@ -1,0 +1,23 @@
+{
+  "name": "pipescope",
+  "version": "1.0.0",
+  "description": "PipeScope: Linux Pipeline Explorer",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GreatBrandon/PipeScope.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GreatBrandon/PipeScope/issues"
+  },
+  "homepage": "https://github.com/GreatBrandon/PipeScope#readme",
+  "dependencies": {
+    "express": "^5.3.0",
+    "shell-quote": "^1.12.0"
+  }
+}

@@ -1,0 +1,26 @@
+<input id="pipeline" size="80" placeholder="grep -F ERROR app.log | cut -d ' ' -f 2 | sort | uniq -c">
+<button id="run">Run</button>
+<div id="stages"></div>
+<script>
+const token = new URLSearchParams(location.search).get('token');
+document.getElementById('run').onclick = async () => {
+  const res = await fetch('/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-token': token },
+    body: JSON.stringify({ pipeline: document.getElementById('pipeline').value })
+  });
+  const data = await res.json();
+  const box = document.getElementById('stages');
+  box.innerHTML = '';
+  if (data.error) { box.textContent = data.error; return; }
+  data.stages.forEach((s, i) => {
+    const div = document.createElement('div');
+    const title = document.createElement('h4');
+    title.textContent = `Stage ${i + 1}: ${s.cmd}`;
+    const pre = document.createElement('pre');
+    pre.textContent = s.out + (s.err ? '\n[error] ' + s.err : '');
+    div.append(title, pre);
+    box.append(div);
+  });
+};
+</script>
