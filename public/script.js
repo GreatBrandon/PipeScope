@@ -1,12 +1,13 @@
 const token = new URLSearchParams(location.search).get('token');
 
 // run pipeline
-document.getElementById('run').onclick = async () => {
+document.getElementById('pipelineForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
     // run pipeline on local server
     const res = await fetch('/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-token': token },
-        body: JSON.stringify({ pipeline: document.getElementById('pipeline').value })
+        body: JSON.stringify({ pipeline: document.getElementById('pipelineInput').value })
     });
 
     // get response
@@ -25,14 +26,7 @@ document.getElementById('run').onclick = async () => {
         div.append(title, pre);
         box.append(div);
     });
-};
-
-// run pipeline when enter key is pressed when entering text in the textbox
-document.querySelector("#pipeline").addEventListener("keyup", event => {
-    if(event.key !== "Enter") return;
-    document.querySelector("#run").click();
-    event.preventDefault();
-})
+});
 
 // fetch platform and enable/disable run button if linux/windows/other
 fetch('/platform')

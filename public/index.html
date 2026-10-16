@@ -9,8 +9,10 @@
 <body>
     <h2>PipeScope</h2>
     <div><p id="platform"></p></div>
-    <input id="pipeline" size="50" placeholder="grep -F ERROR app.log | cut -d ' ' -f 2 | sort | uniq -c">
-    <button id="run" disabled>Run</button>
+    <form id="pipelineForm">
+        <input id="pipelineInput" size="50" placeholder="grep -F ERROR app.log | cut -d ' ' -f 2 | sort | uniq -c">
+        <button id="run" disabled>Run</button>
+    </form>
     <div id="stages"></div>
     <script src="script.js"></script>
 </body>
