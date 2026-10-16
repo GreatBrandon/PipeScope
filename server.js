@@ -2,11 +2,13 @@ const express = require('express');
 const { parse } = require('shell-quote');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const { platform } = require('node:process');
 
 const WORKDIR = process.cwd();              // folder PipeScope was launched from
 const TOKEN = crypto.randomBytes(16).toString('hex');
 const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr']);
 
+// parse the pipeline into stages using a built in shell parses
 function splitStages(text) {
     const stages = [[]];
     for (const tok of parse(text)) {
@@ -17,6 +19,7 @@ function splitStages(text) {
     return stages;
 }
 
+// run a shell command given some input and return the output
 function runStage([cmd, ...args], input) {
     return new Promise(resolve => {
         if (!ALLOWED.has(cmd)) return resolve({ out: '', err: `Unsupported command: ${cmd}`, code: 127 });
@@ -31,12 +34,16 @@ function runStage([cmd, ...args], input) {
     });
 }
 
+// launch app
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
+// receive pipeline text
 app.post('/run', async (req, res) => {
+    // TODO remove tokens unneccessary slop
     if (req.get('x-token') !== TOKEN) return res.status(403).json({ error: 'bad token' });
+    // split pipeline command into stages
     let stages;
     try { 
         stages = splitStages(req.body.pipeline || '');
@@ -45,16 +52,26 @@ app.post('/run', async (req, res) => {
         return res.status(400).json({ error: e.message }); 
     }
 
+    // run each stage separately and log the output
     const results = [];
     let input = '';
     for (const stage of stages) {
         const r = await runStage(stage, input);
         results.push({ cmd: stage.join(' '), ...r });
-        if (r.code !== 0) break;                // keep earlier stages visible
+        if (r.code !== 0) break;
         input = r.out;
     }
+    // send output back to frontend
     res.json({ stages: results });
 });
 
-app.listen(3000, '127.0.0.1', () =>
-  console.log(`PipeScope running in ${WORKDIR}\nOpen http://127.0.0.1:3000/?token=${TOKEN}`));
+// when app launches, provide URL
+app.listen(3000, '127.0.0.1', () => {
+    console.log(`PipeScope running in ${WORKDIR}\nOpen http://127.0.0.1:3000/?token=${TOKEN}`);
+    console.log("Platform is "+platform);
+});
+
+// request platform the app is run on
+app.get('/platform', (req, res) => {
+    res.json({platform});
+});
