@@ -1,12 +1,16 @@
+#!/usr/bin/env node
+
 const express = require('express');
 const { parse } = require('shell-quote');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const { platform } = require('node:process');
+const open = require('open').default;
+const path = require('path');
 
 const WORKDIR = process.cwd();              // folder PipeScope was launched from
 const TOKEN = crypto.randomBytes(16).toString('hex');
-const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr']);
+const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'cd', 'ls', 'pwd', 'cowsay', 'sed']);
 
 // parse the pipeline into stages using a built in shell parses
 function splitStages(text) {
@@ -37,7 +41,7 @@ function runStage([cmd, ...args], input) {
 // launch app
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // receive pipeline text
 app.post('/run', async (req, res) => {
@@ -65,10 +69,14 @@ app.post('/run', async (req, res) => {
     res.json({ stages: results });
 });
 
-// when app launches, provide URL
-app.listen(3000, '127.0.0.1', () => {
-    console.log(`PipeScope running in ${WORKDIR}\nOpen http://127.0.0.1:3000/?token=${TOKEN}`);
+// launch app, print URL if app fails to launch automatically
+const server = app.listen(0, '127.0.0.1', () => {
+    const port = server.address().port;
+    const url = `http://127.0.0.1:${port}/?token=${TOKEN}`;
+    console.log(`PipeScope running in ${url}`);
     console.log("Platform is "+platform);
+    console.log("CWD is "+WORKDIR);
+    open(url);
 });
 
 // request platform the app is run on
