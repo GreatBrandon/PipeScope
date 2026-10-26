@@ -15,6 +15,15 @@ document.getElementById('pipelineForm').addEventListener('submit', async (event)
     const box = document.getElementById('stages');
     box.innerHTML = '';
     if (data.error) { box.textContent = data.error; return; }
+    if (data.cwdError) {
+        box.textContent = data.cwdError;
+        return;
+    }
+    if (data.cwdPath) {
+        box.textContent = "Current working directory changed successfully";
+        document.getElementById("cwd").textContent = "Current working directory: " + data.cwdPath;
+        return;
+    }
 
     // display response
     data.stages.forEach((s, i) => {
@@ -29,7 +38,7 @@ document.getElementById('pipelineForm').addEventListener('submit', async (event)
 });
 
 // fetch platform and enable/disable run button if linux/windows/other
-fetch('/platform')
+fetch('/initial')
     .then(res => res.json())
     .then(data => {
         let text;
@@ -44,6 +53,7 @@ fetch('/platform')
             }
         }
         document.getElementById("platform").textContent = text;
+        document.getElementById("cwd").textContent = "Current working directory: " + data.workDir;
     })
     .catch(err => {
         console.log(err);

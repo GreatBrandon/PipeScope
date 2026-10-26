@@ -7,10 +7,13 @@ const crypto = require('crypto');
 const { platform } = require('node:process');
 const open = require('open').default;
 const path = require('path');
+const fs = require('fs');
+const HOMEDIR = require('os').homedir()
 
-const WORKDIR = process.cwd();              // folder PipeScope was launched from
 const TOKEN = crypto.randomBytes(16).toString('hex');
-const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'cd', 'ls', 'pwd', 'cowsay', 'sed']);
+const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'cd', 'ls', 'pwd', 'cowsay', 'sed', 'find']);
+
+var workDir = process.cwd(); // folder PipeScope was launched from
 
 // parse the pipeline into stages using a built in shell parses
 function splitStages(text) {
@@ -27,7 +30,7 @@ function splitStages(text) {
 function runStage([cmd, ...args], input) {
     return new Promise(resolve => {
         if (!ALLOWED.has(cmd)) return resolve({ out: '', err: `Unsupported command: ${cmd}`, code: 127 });
-        const p = spawn(cmd, args, { cwd: WORKDIR, timeout: 5000 });
+        const p = spawn(cmd, args, { cwd: workDir, timeout: 5000 });
         let out = '', err = '';
         p.stdout.on('data', d => { if (out.length < 1e6) out += d; });
         p.stderr.on('data', d => { if (err.length < 1e4) err += d; });
@@ -45,8 +48,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // receive pipeline text
 app.post('/run', async (req, res) => {
-    // TODO remove tokens unneccessary slop
     if (req.get('x-token') !== TOKEN) return res.status(403).json({ error: 'bad token' });
+
     // split pipeline command into stages
     let stages;
     try { 
@@ -56,14 +59,50 @@ app.post('/run', async (req, res) => {
         return res.status(400).json({ error: e.message }); 
     }
 
+    // if command is a cd
+    if (stages.length != 0 && stages[0][0] === 'cd') {
+        let cwdError = null;
+        let cwdPath = null;
+        
+        try {
+            if (stages.length != 1 || stages[0].length != 2) {
+                cwdError = "Invalid CD usage";
+            } else {
+                const target = stages[0][1];
+                var newDir;
+                if (target === '~') {
+                    newDir = HOMEDIR;
+                } else if (target.startsWith('~/')) {
+                    newDir = path.resolve(HOMEDIR, target.slice(2));
+                } else {
+                    newDir = path.resolve(workDir, stages[0][1]);
+                }
+                if (fs.existsSync(newDir)) {
+                    if (fs.statSync(newDir).isDirectory()) {
+                        workDir = newDir;
+                        cwdPath = newDir;
+                    } else {
+                        cwdError = "Path is not a directory";
+                    }
+                } else {
+                    cwdError = "Path does not exist";
+                }
+            }
+        } catch (e) {
+            cwdError = e.message;
+        }
+        res.json({ cwdError, cwdPath });
+        return;
+    }
+
     // run each stage separately and log the output
     const results = [];
     let input = '';
     for (const stage of stages) {
-        const r = await runStage(stage, input);
-        results.push({ cmd: stage.join(' '), ...r });
-        if (r.code !== 0) break;
-        input = r.out;
+        const result = await runStage(stage, input);
+        results.push({ cmd: stage.join(' '), ...result });
+        if (result.code !== 0) break;
+        input = result.out;
     }
     // send output back to frontend
     res.json({ stages: results });
@@ -75,11 +114,11 @@ const server = app.listen(0, '127.0.0.1', () => {
     const url = `http://127.0.0.1:${port}/?token=${TOKEN}`;
     console.log(`PipeScope running in ${url}`);
     console.log("Platform is "+platform);
-    console.log("CWD is "+WORKDIR);
+    console.log("CWD is "+workDir);
     open(url);
 });
 
 // request platform the app is run on
-app.get('/platform', (req, res) => {
-    res.json({platform});
+app.get('/initial', (req, res) => {
+    res.json({platform, workDir});
 });

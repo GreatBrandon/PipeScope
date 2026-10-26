@@ -8,7 +8,10 @@
 </head>
 <body>
     <h2>PipeScope</h2>
-    <div><p id="platform"></p></div>
+    <div>
+        <p id="platform"></p>
+        <p id="cwd"></p>
+    </div>
     <form id="pipelineForm">
         <input id="pipelineInput" size="50" placeholder="grep -F ERROR app.log | cut -d ' ' -f 2 | sort | uniq -c">
         <button id="run" disabled>Run</button>
