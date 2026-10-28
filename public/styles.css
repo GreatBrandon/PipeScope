@@ -1,4 +1,254 @@
+/* PipeScope — each pipeline stage hangs off a single continuous "pipe". */
+
+:root {
+    --bg: #f2f4f6;
+    --surface: #ffffff;
+    --ink: #1b2330;
+    --muted: #5d6877;
+    --line: #d9dee5;
+    --pipe: #1f8a8a;
+    --on-pipe: #ffffff;
+    --code-bg: #eaeef2;
+    --focus: #c2410c;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-code: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    color-scheme: light;
+}
+
+/* Dark palette: used when the toggle sets it, or when the system prefers dark and the toggle hasn't chosen light */
+:root[data-theme='dark'] {
+    --bg: #12171f;
+    --surface: #1a212c;
+    --ink: #e6eaf0;
+    --muted: #98a3b3;
+    --line: #2b3441;
+    --pipe: #4fc3c3;
+    --on-pipe: #0b1519;
+    --code-bg: #10151c;
+    --focus: #fb923c;
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+        --bg: #12171f;
+        --surface: #1a212c;
+        --ink: #e6eaf0;
+        --muted: #98a3b3;
+        --line: #2b3441;
+        --pipe: #4fc3c3;
+        --on-pipe: #0b1519;
+        --code-bg: #10151c;
+        --focus: #fb923c;
+        color-scheme: dark;
+    }
+}
+
 * {
     box-sizing: border-box;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: var(--font-ui);
+}
+
+body {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+}
+
+/* ---------- header ---------- */
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+#themeToggle {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+#themeToggle:hover {
+    border-color: var(--pipe);
+}
+
+#themeToggle:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+
+h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+#platform,
+#cwd {
+    margin: 0.15rem 0;
+    font-size: 0.875rem;
+    color: var(--muted);
+}
+
+#cwd {
+    font-family: var(--font-code);
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- pipeline input ---------- */
+
+#pipelineForm {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1.5rem 0 2rem;
+}
+
+#pipelineInput {
+    flex: 1;
+    min-width: 0;
+    padding: 0.8rem 1rem;
+    font-family: var(--font-code);
+    font-size: 0.9375rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+#pipelineInput::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+}
+
+#run {
+    padding: 0 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 650;
+    color: var(--on-pipe);
+    background: var(--pipe);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+}
+
+#run:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+#run:active:not(:disabled) {
+    filter: brightness(0.92);
+}
+
+#run:disabled {
+    background: var(--line);
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+#pipelineInput:focus-visible,
+#run:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+
+/* ---------- stages ---------- */
+
+#stages {
+    font-size: 0.9375rem;
+}
+
+/* Each stage sits on the shared pipe (left border) with a joint at its title. */
+#stages > div {
+    position: relative;
+    margin-left: 0.5rem;
+    padding: 0 0 1.75rem 1.5rem;
+    border-left: 3px solid var(--pipe);
+}
+
+#stages > div:last-child {
+    padding-bottom: 0;
+}
+
+#stages > div h4 {
+    position: relative;
+    margin: 0 0 0.6rem;
+    font-family: var(--font-code);
+    font-size: 0.875rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+#stages > div h4::before {
+    content: '';
+    position: absolute;
+    left: calc(-1.5rem - 8px);
+    top: 0.2em;
+    width: 13px;
+    height: 13px;
+    background: var(--bg);
+    border: 3px solid var(--pipe);
+    border-radius: 50%;
+}
+
+#stages pre {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    max-height: 22rem;
+    overflow: auto;
+    font-family: var(--font-code);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+#stages pre:empty::before {
+    content: 'No output';
+    color: var(--muted);
+    font-style: italic;
+}
+
+/* ---------- messages (errors, cd confirmations) ---------- */
+
+/* Plain text dropped straight into #stages by script.js */
+#stages:not(:empty):not(:has(> div)) {
+    padding: 0.8rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--pipe);
+    border-radius: 8px;
+}
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 480px) {
+    body {
+        padding-top: 1.5rem;
+    }
+
+    #pipelineForm {
+        flex-direction: column;
+    }
+
+    #run {
+        padding: 0.75rem;
+    }
 }

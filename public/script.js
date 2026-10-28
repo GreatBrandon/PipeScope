@@ -58,3 +58,25 @@ fetch('/initial')
     .catch(err => {
         console.log(err);
     });
+
+// light/dark toggle
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeToggle');
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+ 
+function currentTheme() {
+    return root.dataset.theme || (systemDark.matches ? 'dark' : 'light');
+}
+ 
+function updateThemeButton() {
+    themeBtn.textContent = currentTheme() === 'dark' ? 'Switch to light' : 'Switch to dark';
+}
+ 
+themeBtn.addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try { localStorage.setItem('theme', next); } catch (e) {}
+    updateThemeButton();
+});
+ 
+updateThemeButton();
