@@ -1,20 +1,21 @@
 {
     "name": "pipescope",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "bin": {
-        "pipescope": "server.js"
+        "pipescope": "src/server.js"
     },
     "engines": {
         "node": ">=20.19.6"
     },
     "files": [
-        "server.js",
-        "public/"
+        "src/",
+        "README.md",
+        "LICENSE"
     ],
     "description": "PipeScope: Linux Pipeline Explorer",
-    "main": "server.js",
+    "main": "src/server.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: download tests directly from GitHub repository\" && exit 1"
     },
     "repository": {
         "type": "git",

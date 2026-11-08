@@ -43,13 +43,15 @@ fetch('/initial')
     .then(data => {
         let text;
         if (data.platform === "win32") {
-            text = "The current platform is Windows, PipeScope only works on Linux or WSL. The run button has been disabled.";
+            text = "The current platform is Windows, PipeScope only works on Linux, WSL or MacOS. The run button has been disabled.";
         } else {
             document.getElementById("run").disabled = false;
-            if (data.platform !== "linux") {
-                text = `The current platform is ${data.platform}, PipeScope has not been tested on this platform.`;
+            if (data.platform === "linux") {
+                text = "Current platform: Linux or WSL"
+            } else if (data.platform === "darwin") {
+                text = "Current platform: MacOS or Darwin"
             } else {
-                text = "Current platform: Linux or WSL."
+                text = `The current platform is ${data.platform}, PipeScope has not been tested on this platform.`;
             }
         }
         document.getElementById("platform").textContent = text;
