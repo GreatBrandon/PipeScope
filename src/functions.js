@@ -4,17 +4,25 @@ const path = require('path');
 const fs = require('fs');
 const HOMEDIR = require('os').homedir()
 
-const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'cd', 'ls', 'pwd', 'cowsay', 'sed', 'find']);
+const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'ls', 'pwd', 'cowsay', 'sed', 'find']);
 
 let workDir = process.cwd(); // folder PipeScope was launched from
 
-// parse the pipeline into stages using a built in shell parses
+// parse the pipeline into stages using a built in shell parser
 function splitStages(text) {
     const stages = [[]];
+    let pipe = false;
     for (const tok of parse(text)) {
-        if (typeof tok === 'string') stages[stages.length - 1].push(tok);
-        else if (tok.op === '|') stages.push([]);
-        else throw new Error(`Unsupported syntax: ${tok.op || 'expression'}`);
+        if (typeof tok === 'string') {
+            stages[stages.length - 1].push(tok);
+            pipe = false;
+        } else if (tok.op === '|') {
+            stages.push([]);
+            pipe = true;
+        } else throw new Error(`Unsupported syntax: ${tok.op || 'expression'}`);
+    }
+    if (pipe) {
+        throw new Error(`Unsupported syntax: last token is pipe`);
     }
     return stages;
 }
@@ -23,33 +31,43 @@ function splitStages(text) {
 function runStage([cmd, ...args], input) {
     return new Promise(resolve => {
         if (!ALLOWED.has(cmd)) return resolve({ out: '', err: `Unsupported command: ${cmd}`, code: 127 });
-        const p = spawn(cmd, args, { cwd: workDir, timeout: 5000 });
+
+        const p = spawn(cmd, args, { cwd: workDir, timeout: 5000 }); // execute command, do not use shell=True, execute directly instead of through a shell
         let out = '', err = '';
-        p.stdout.on('data', d => { if (out.length < 1e6) out += d; });
-        p.stderr.on('data', d => { if (err.length < 1e4) err += d; });
-        p.on('error', e => resolve({ out, err: e.message, code: 1 }));
-        p.on('close', code => resolve({ out, err, code }));
-        p.stdin.on('error', () => {});          // ignore EPIPE if the command exits early
-        p.stdin.end(input);
+
+        // TODO: truncate output and error properly in case some huge file comes along and eats all the RAM
+        p.stdout.on('data', d => { out += d; }); // listen to stdout
+        p.stderr.on('data', d => { err += d; }); // listen to stderr
+
+        p.on('error', e => resolve({ out, err: e.message, code: 1 })); // if error
+        p.on('close', code => resolve({ out, err, code })); // if stdout closed
+
+        p.stdin.on('error', e => { // if stdin error
+            if (e.code !== 'EPIPE') { // Ignore EPIPE errors, some commands close stdin early and cause this (e.g. head, tail)
+                return resolve({ out: '', err: e.message, code: -1 })
+            }
+        });
+        p.stdin.end(input); // send input to stdin
     });
 }
 
-function runCD(stages) {
+// check and run a CD command
+function runCD(cmd) {
     let cwdError = null;
     let cwdPath = null;
     
     try {
-        if (stages.length != 1 || stages[0].length != 2) {
+        if (cmd.length != 2) {
             cwdError = "Invalid CD usage";
         } else {
-            const target = stages[0][1];
+            const target = cmd[1];
             var newDir;
             if (target === '~') {
                 newDir = HOMEDIR;
             } else if (target.startsWith('~/')) {
                 newDir = path.resolve(HOMEDIR, target.slice(2));
             } else {
-                newDir = path.resolve(workDir, stages[0][1]);
+                newDir = path.resolve(workDir, target);
             }
             if (fs.existsSync(newDir)) {
                 if (fs.statSync(newDir).isDirectory()) {
@@ -68,8 +86,8 @@ function runCD(stages) {
     return { cwdError, cwdPath };
 }
 
+// run each stage separately and log the output
 async function runStagesAndLog(stages) {
-    // run each stage separately and log the output
     const results = [];
     let input = '';
     for (const stage of stages) {
@@ -81,11 +99,17 @@ async function runStagesAndLog(stages) {
     return {stages: results}
 }
 
+// Unfiltered, only use for manually changing workdir for tests
+function setWorkDir(newWorkDir) {
+    workDir = newWorkDir;
+}
+
 // Export functions
 module.exports = {
     splitStages,
     runStage,
     runCD,
     runStagesAndLog,
-    getWorkDir: () => workDir
+    getWorkDir: () => workDir,
+    setWorkDir,
 };

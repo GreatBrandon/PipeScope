@@ -33,8 +33,12 @@ app.post('/run', async (req, res) => {
     }
 
     // if command is a cd
-    if (stages.length != 0 && stages[0][0] === 'cd') {
-        return res.json(runCD(stages));
+    if (stages[0][0] === 'cd') {
+        if (stages.length == 1) {
+            return res.status(400).json({ error: 'Invalid CD usage' });
+        } else {
+            return res.json(runCD(stages[0]));
+        }
     }
     
     // send output back to frontend
