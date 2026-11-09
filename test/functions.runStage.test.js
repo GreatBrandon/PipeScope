@@ -1,6 +1,10 @@
-const { test, describe } = require('node:test');
+const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
-const { runStage } = require('../src/functions.js');
+const { runStage, setWorkDir } = require('../src/functions.js');
+
+before(() => {
+    setWorkDir(__dirname);
+});
 
 describe('Unsupported commands tests: ', () => {
     const testCases = [

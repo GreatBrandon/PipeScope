@@ -34,10 +34,10 @@ app.post('/run', async (req, res) => {
 
     // if command is a cd
     if (stages[0][0] === 'cd') {
-        if (stages.length == 1) {
-            return res.status(400).json({ error: 'Invalid CD usage' });
-        } else {
+        if (stages.length === 1) {
             return res.json(runCD(stages[0]));
+        } else {
+            return res.status(400).json({ error: 'Invalid CD usage' });
         }
     }
     
