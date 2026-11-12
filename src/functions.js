@@ -2,9 +2,10 @@ const { parse } = require('shell-quote');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { ALL } = require('dns');
 const HOMEDIR = require('os').homedir()
 
-const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'ls', 'pwd', 'cowsay', 'sed', 'find']);
+const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'ls', 'pwd', 'cowsay', 'sed', 'find', 'echo']);
 
 let workDir = process.cwd(); // folder PipeScope was launched from
 
@@ -31,6 +32,19 @@ function splitStages(text) {
 function runStage([cmd, ...args], input) {
     return new Promise(resolve => {
         if (!ALLOWED.has(cmd)) return resolve({ out: '', err: `Unsupported command: ${cmd}`, code: 127 });
+
+        if (cmd === 'find') {
+            let hasExec = null;
+            for (const arg of args) {
+                if (arg === '-exec' || arg === '-execdir') {
+                    hasExec = arg;
+                } else if (hasExec) {
+                    // rejects malicious find commands
+                    if (!ALLOWED.has(arg)) return resolve({ out: '', err: `Unsupported ${hasExec} command: ${arg}`, code: 127 });
+                    hasExec = null;
+                }
+            };
+        }
 
         const p = spawn(cmd, args, { cwd: workDir, timeout: 5000 }); // execute command, do not use shell=True, execute directly instead of through a shell
         let out = '', err = '';

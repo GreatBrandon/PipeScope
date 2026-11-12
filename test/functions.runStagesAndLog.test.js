@@ -19,6 +19,10 @@ describe('Run multistage command: ', () => {
             'error\r\nerror\r\ninfo\r\ndebug\r\ndebug\r\n',
             '34\n'
         ]],
+        ['cat app2.log | tr [A-Z] [a-z]', [
+            'ERROR\r\nERROR\r\nINFO\r\nDEBUG\r\nDEBUG\r\nINFO',
+            'error\r\nerror\r\ninfo\r\ndebug\r\ndebug\r\ninfo'
+        ]], // tr
         ["grep DEBUGG app.log | cut -d ' ' -f 2 | sort | uniq -c", [''], [1]], // check it breaks early with invalid commands
         ["head -n 1 app2.log | grep DEBUG | wc -c", ['ERROR\r\n', ''], [0,1]]
     ];

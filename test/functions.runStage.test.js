@@ -1,6 +1,6 @@
 const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
-const { runStage, setWorkDir } = require('../src/functions.js');
+const { runStage, setWorkDir, splitStages } = require('../src/functions.js');
 
 before(() => {
     setWorkDir(__dirname);
@@ -38,6 +38,7 @@ describe('Run commands tests:', () => {
         [['sort', 'app2.log'], 'DEBUG\r\nDEBUG\r\nERROR\r\nERROR\r\nINFO\nINFO\r\n'], // sort
         [['uniq', 'app2.log'], 'ERROR\r\nINFO\r\nDEBUG\r\nINFO\n'], // uniq
         [['wc', '-l', 'app.log'], '4 app.log\n'], // wc
+        [['echo', 'Hello', 'World'], 'Hello World\n'], // echo
         // ls and pwd skipped as those change depending on user's PC and files in test folder
 
         // Below commands have error messages and/or error codes
@@ -62,24 +63,21 @@ describe('Run commands tests:', () => {
     });
 });
 
-describe('Run piped commands test:', () => {
+describe('Find tests:', () => {
     const testCases = [
-        [['cat', 'app2.log'], ['tr', '[A-Z]', '[a-z]'], 'error\r\nerror\r\ninfo\r\ndebug\r\ndebug\r\ninfo'] // tr
+        ["find -type f -name '*.log' -exec wc -l {} +", '  4 ./app.log\n  5 ./app2.log\n  0 ./testFolder/testFile.log\n  9 total\n'], // correct find command
+        ["find -type f -name '*.log' -exec rm", '', 'Unsupported -exec command: rm', 127], // test -exec
+        ["find -type f -name '*.log' -execdir rm", '', 'Unsupported -execdir command: rm', 127], // test -execdir
     ];
 
-    testCases.forEach(([cmd1, cmd2, expectedOut, expectedError = '', expectedCode = 0]) => {
-        test(`Run command: ${cmd2}`, async () => {
-            const res1 = await runStage(cmd1);
-            const input = res1.out;
-            const result = await runStage(cmd2, input);
+
+    testCases.forEach(([input, expectedOut, expectedError = '', expectedCode = 0]) => {
+        test(`Run command: ${input}`, async () => {
+            const cmd = splitStages(input);
+            const result = await runStage(cmd[0]);
             assert.strictEqual(result.out, expectedOut);
             assert.strictEqual(result.err, expectedError);
             assert.strictEqual(result.code, expectedCode);
         });
-    })
-});
-
-// TODO
-describe('Find and sed tests:', () => {
-    test('Find and sed test', {todo: true})
+    });
 })
