@@ -65,7 +65,7 @@ describe('Run commands tests:', () => {
 
 describe('Find tests:', () => {
     const testCases = [
-        ["find -type f -name '*.log' -exec wc -l {} +", '  4 ./app.log\n  5 ./app2.log\n  0 ./testFolder/testFile.log\n  9 total\n'], // correct find command
+        ["find -type f -name '*.log' -exec wc -l {} +", '  4 ./app.log\n  5 ./app2.log\n  0 ./testFolder/testFile.log\n  2 ./testFolder/testFile2.log\n 11 total\n'], // correct find command
         ["find -type f -name '*.log' -exec rm", '', 'Unsupported -exec command: rm', 127], // test -exec
         ["find -type f -name '*.log' -execdir rm", '', 'Unsupported -execdir command: rm', 127], // test -execdir
     ];
