@@ -9,6 +9,24 @@ const HOMEDIR = require('os').homedir()
 // sed -i, e, w
 const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', 'wc', 'tr', 'ls', 'sed', 'find', 'echo']);
 
+// TODO add argument lists
+// empty will mean all allowed
+const ALLOWEDARGS = new Map([
+    ['cat', []],
+    ['grep', []],
+    ['cut', []],
+    ['sort', []],
+    ['uniq', []],
+    ['head', []],
+    ['tail', []],
+    ['wc', []],
+    ['tr', []],
+    ['ls', []],
+    ['sed', []],
+    ['find', []],
+    ['echo', []]
+])
+
 let workDir = process.cwd(); // folder PipeScope was launched from
 
 // parse the pipeline into stages using a built in shell parser
@@ -73,7 +91,7 @@ function runCD(cmd) {
     let cwdPath = null;
     
     try {
-        if (cmd.length != 2) {
+        if (cmd.length !== 2) {
             cwdError = "Invalid CD usage";
         } else {
             const target = cmd[1];
@@ -101,7 +119,6 @@ function runCD(cmd) {
     }
     return { cwdError, cwdPath };
 }
-// TODO warn if ls, echo or find are not 1st command
 
 // run each stage separately and log the output
 async function runStagesAndLog(stages) {
@@ -121,29 +138,6 @@ function setWorkDir(newWorkDir) {
     workDir = newWorkDir;
 }
 
-async function getInitialSourceRecords(stage, results) {
-    const [cmd, ...args] = stage;
-    if (cmd === 'ls' || cmd === 'echo' || cmd === 'find' || cmd == 'head') {
-        const result = await runStage(stage, '');
-
-        results.push({ cmd: stage.join(' '), ...result });
-        if (result.code !== 0) return;
-
-        const lineNums = [];
-        let currentLine = 1;
-
-        for (const line of result.out.split('\n')) {
-            lineNums.push([currentLine++, line]);
-        }
-        if (lineNums[lineNums.length - 1][1] === '') {
-            lineNums.pop(1);
-        }
-        results[results.length-1].lineNums = lineNums;
-    } else {
-        throw new Error("Not yet implemented");
-    }
-}
-
 // Export functions
 module.exports = {
     splitStages,
@@ -151,6 +145,5 @@ module.exports = {
     runCD,
     runStagesAndLog,
     getWorkDir: () => workDir,
-    setWorkDir,
-    getInitialSourceRecords
+    setWorkDir
 };
