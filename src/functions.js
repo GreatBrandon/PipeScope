@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const HOMEDIR = require('os').homedir()
+const { getSourceRecords } = require('./tracing')
 
 // TODO block: 
 // find -delete
@@ -129,6 +130,11 @@ async function runStagesAndLog(stages) {
         results.push({ cmd: stage.join(' '), ...result });
         if (result.code !== 0) break;
         input = result.out;
+        if (input !== '') {
+            getSourceRecords(stage, results)
+        } else {
+            results[results.length - 1].warn = 'skipped due to no output';
+        }
     }
     return {stages: results}
 }

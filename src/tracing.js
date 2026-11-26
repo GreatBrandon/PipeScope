@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const yargsParser = require('yargs-parser');
 const { getWorkDir } = require('./functions');
-const { check, boolean } = require('yargs');
 
 const parserArgs = {
     configuration: {

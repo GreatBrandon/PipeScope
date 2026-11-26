@@ -14,6 +14,9 @@
     <div>
         <p id="platform"></p>
         <p id="cwd"></p>
+        <label id="traceLabel">
+            <input type="checkbox" id="traceToggle"> Show source tracing (experimental)
+        </label>
     </div>
     <form id="pipelineForm">
         <input id="pipelineInput" size="50" placeholder="grep -F ERROR app.log | cut -d ' ' -f 2 | sort | uniq -c">
