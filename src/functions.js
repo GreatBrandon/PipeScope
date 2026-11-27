@@ -3,7 +3,8 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const HOMEDIR = require('os').homedir()
-const { getSourceRecords } = require('./tracing')
+const { getSourceRecords } = require('./tracing');
+const { getWorkDir, setWorkDir } = require('./dirs');
 
 // TODO block: 
 // find -delete
@@ -12,23 +13,21 @@ const ALLOWED = new Set(['cat', 'grep', 'cut', 'sort', 'uniq', 'head', 'tail', '
 
 // TODO add argument lists
 // empty will mean all allowed
-const ALLOWEDARGS = new Map([
-    ['cat', []],
-    ['grep', []],
-    ['cut', []],
-    ['sort', []],
-    ['uniq', []],
-    ['head', []],
-    ['tail', []],
-    ['wc', []],
-    ['tr', []],
-    ['ls', []],
-    ['sed', []],
-    ['find', []],
-    ['echo', []]
-])
-
-let workDir = process.cwd(); // folder PipeScope was launched from
+const FORBIDDENARGS = {
+    cat: [],
+    grep: [],
+    cut: [],
+    sort: [],
+    uniq: [],
+    head: [],
+    tail: ['-f', '--follow', '--pid', '-s', '--sleep-interval', '--max-unchanged-stats', '--use-polling', '--retry', '-F', '--debug'],
+    wc: [],
+    tr: [],
+    ls: [],
+    sed: [],
+    find: [], // -exec and -execdir calculated separately
+    echo: []
+}
 
 // parse the pipeline into stages using a built in shell parser
 function splitStages(text) {
@@ -53,6 +52,14 @@ function splitStages(text) {
 function runStage([cmd, ...args], input) {
     return new Promise(resolve => {
         if (!ALLOWED.has(cmd)) return resolve({ out: '', err: `Unsupported command: ${cmd}`, code: 127 });
+        if (FORBIDDENARGS[cmd]) {
+            for (let i = 0; i < args.length; i++) {
+                if (FORBIDDENARGS[cmd].includes(args[i])) return resolve({ out: '', err: `Unsupported arg: ${args[i]}`, code: 127});
+            }
+        } else {
+            return resolve({ out: '', err: `Command not in argument allow list: ${cmd}`, code: 127 });
+        }
+
 
         if (cmd === 'find') {
             let hasExec = null;
@@ -67,7 +74,7 @@ function runStage([cmd, ...args], input) {
             };
         }
 
-        const p = spawn(cmd, args, { cwd: workDir, timeout: 5000 }); // execute command, do not use shell=True, execute directly instead of through a shell
+        const p = spawn(cmd, args, { cwd: getWorkDir(), timeout: 5000 }); // execute command, do not use shell=True, execute directly instead of through a shell
         let out = '', err = '';
 
         // TODO: truncate output and error properly in case some huge file comes along and eats all the RAM
@@ -102,11 +109,11 @@ function runCD(cmd) {
             } else if (target.startsWith('~/')) {
                 newDir = path.resolve(HOMEDIR, target.slice(2));
             } else {
-                newDir = path.resolve(workDir, target);
+                newDir = path.resolve(getWorkDir(), target);
             }
             if (fs.existsSync(newDir)) {
                 if (fs.statSync(newDir).isDirectory()) {
-                    workDir = newDir;
+                    setWorkDir(newDir);
                     cwdPath = newDir;
                 } else {
                     cwdError = "Path is not a directory";
@@ -139,17 +146,10 @@ async function runStagesAndLog(stages) {
     return {stages: results}
 }
 
-// Unfiltered, only use for manually changing workdir for tests
-function setWorkDir(newWorkDir) {
-    workDir = newWorkDir;
-}
-
 // Export functions
 module.exports = {
     splitStages,
     runStage,
     runCD,
-    runStagesAndLog,
-    getWorkDir: () => workDir,
-    setWorkDir
+    runStagesAndLog
 };

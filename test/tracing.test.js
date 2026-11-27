@@ -1,7 +1,7 @@
 const { test, describe, before } = require('node:test');
-const assert = require('node:assert/strict');
-const { runStage, splitStages, setWorkDir } = require("../src/functions");
-const { getSourceRecords, getInitialSourceRecords } = require("../src/tracing");
+const { setWorkDir } = require('../src/dirs.js');
+const { runStage, splitStages } = require("../src/functions");
+const { getSourceRecords } = require("../src/tracing");
 
 async function testPipelines(pipelines) {
     pipelines.forEach((pipeline) => {

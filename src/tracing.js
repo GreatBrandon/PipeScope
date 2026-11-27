@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const yargsParser = require('yargs-parser');
-const { getWorkDir } = require('./functions');
+const { getWorkDir } = require('./dirs');
 
 const parserArgs = {
     configuration: {
@@ -204,7 +204,7 @@ function traceHead(args, results, input) {
     };
     latest.lineNums = lineNums;
     latest.filenames = filenames;
-    if (ignoredStdIn) latest.warn = 'Warn: ignoring stdin';
+    if (ignoredStdIn && input) latest.warn = 'Warn: ignoring stdin';
 }
 
 function traceTail(args, results, input) {

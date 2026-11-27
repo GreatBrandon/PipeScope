@@ -1,6 +1,7 @@
 const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
-const { runStagesAndLog, splitStages, setWorkDir } = require('../src/functions.js');
+const { setWorkDir } = require('../src/dirs.js');
+const { runStagesAndLog, splitStages } = require('../src/functions.js');
 
 before(() => {
     setWorkDir(__dirname);

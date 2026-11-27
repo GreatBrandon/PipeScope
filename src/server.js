@@ -10,9 +10,10 @@ const TOKEN = crypto.randomBytes(16).toString('hex');
 const {
     splitStages,
     runCD,
-    runStagesAndLog,
-    getWorkDir
+    runStagesAndLog
 } = require('./functions');
+
+const { getWorkDir } = require('./dirs');
 
 // launch app
 const app = express();

@@ -1,6 +1,7 @@
 const { test, describe, before, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
-const { runCD, getWorkDir, setWorkDir, getFileDir } = require('../src/functions.js');
+const { getWorkDir, setWorkDir } = require('../src/dirs.js');
+const { runCD } = require('../src/functions.js');
 
 describe('Run CD command tests: ', () => {
     const testCases = [
